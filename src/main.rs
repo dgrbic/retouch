@@ -1,5 +1,9 @@
 use std::env;
+use std::io;    
+use globwalk;
+use walkdir::DirEntry;
 use getopt::Opt;
+use globwalk::glob;
 
 fn print_usage() {
     println!("Usage: retouch [options] <include_files> [- <exclude_files>]");
@@ -20,13 +24,12 @@ struct Arguments {
     c_ : bool,
     m_ : bool,
     a_ : bool,
-    includes_ : Vec<String>,
-    excludes_ : Vec<String>
+    globs_ : Vec<String>,
 }
 
 impl Default for Arguments {
     fn default() -> Self {
-        Arguments { c_: false, m_: false, a_: false, includes_: vec![], excludes_: vec![] }
+        Arguments { c_: false, m_: false, a_: false, globs_: vec![] }
     }
 }
 
@@ -69,30 +72,67 @@ impl Arguments {
 
         value.set_flags_if_unset();
 
-
-
         let mut args = args.split_off(opts.index());
 
         if let Some(index) = args.iter().position(|x| x == "-") {
             let mut excl_args = args.split_off(index);
+            value.globs_.append(&mut args);
             let mut excl_args = excl_args.split_off(1);
-            value.excludes_.append(&mut excl_args);
+            let mut excl_args = excl_args.iter_mut().map(|s| "!".to_owned()+s).collect();
+            value.globs_.append(&mut excl_args);
             
         }
-
-        value.includes_.append(&mut args);
+       else {
+            value.globs_.append(&mut args);
+        }
 
         return Ok(value);
     }
 }
-fn main() {
 
-    let args = Arguments::parse();
+#[derive(Debug)]
+struct App {
 
-    if args.is_err() {
-        print_usage();
+    args: Arguments,
+    files : Vec<DirEntry>
+}
+
+impl Default for App {
+    fn default() -> Self {
+        App {
+            args : Arguments { ..Default::default() },
+            files : vec![]
+        }
     }
+}
 
-    println!("{:?}", args);
+impl App {
+    fn create() -> io::Result<App> {
+        let mut app = App{..Default::default()};
+        let args = Arguments::parse();
+
+        if args.is_err() {
+            print_usage();
+            return Err(io::Error::new(io::ErrorKind::Other, "Help"));
+        }
+
+        app.args = args.ok().unwrap();
+
+        let walker = globwalk::GlobWalkerBuilder::from_patterns(".", &app.args.globs_[..]).max_depth(1).build()?.into_iter().filter_map(Result::ok);
+
+        app.files = walker.filter(|f| f.file_type().is_file()).collect();
+
+        Ok(app)
+
+    }
+}
+fn main() -> io::Result<()> {
+
+    let app = App::create()?;
+
+    println!("{:?}", app);
+
+
+    Ok(())
 
 }
