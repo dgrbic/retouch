@@ -1,24 +1,25 @@
 mod app;
 use app::{App, print_usage};
 
-use crate::app::OptEnum;
+
 fn main() {
     use std::env;
 
     let app = App::create(env::args().collect());
 
-    if let Err(x) = app {
+    if app.is_err() {
         print_usage();
         return;
     }
 
     let app = app.unwrap();
 
-    if app.GetOptions().is_empty() {
+    if app.get_options().is_empty() {
         app.list_files();
     }
 
-    println!("{:?}", app);
+    app.apply_touch();
+    //println!("{:?}", app);
 
 
 }
