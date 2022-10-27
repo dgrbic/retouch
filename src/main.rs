@@ -19,7 +19,4 @@ fn main() {
     }
 
     app.apply_touch();
-    //println!("{:?}", app);
-
-
 }
