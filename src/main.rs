@@ -17,6 +17,7 @@ fn main() {
     if app.get_options().is_empty() {
         app.list_files();
     }
-
-    app.apply_touch();
+    else {
+        app.apply_touch();
+    }
 }
