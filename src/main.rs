@@ -1,5 +1,5 @@
 mod app;
-use app::{App, print_usage};
+use app::{App};
 
 
 fn main() {
@@ -8,7 +8,6 @@ fn main() {
     let app = App::create(env::args().collect());
 
     if app.is_err() {
-        print_usage();
         return;
     }
 

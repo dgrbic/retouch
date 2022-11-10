@@ -1,6 +1,5 @@
-use std::{path::PathBuf, collections::HashMap};
+use std::{path::{PathBuf, Path}, collections::HashMap};
 use globwalk;
-use getopt::Opt;
 use enumset::{self, EnumSetType, EnumSet};
 use quickexif;
 use chrono::{DateTime, TimeZone, Local};
@@ -8,21 +7,23 @@ use std::fs;
 use anyhow::{Result, anyhow};
 use filetime_creation::{FileTime, set_file_atime, set_file_mtime, set_file_ctime};
 use colored::{Colorize, Color};
+use std::collections::HashSet;
+use clap::Parser;
 
-pub fn print_usage() {
-    println!("Usage: retouch [options] <include_files> [- <exclude_files>]");
-    println!("\tOptions:");
-    if cfg!(windows) { println!("\t-c\tSet creation date"); }
-    println!("\t-m\tSet modification date");
-    println!("\t-a\tSet last access date");
-    println!("\t-l\tLists files, displaying EXIF embedded creation date. Other date flags are ignored, no changes are applied.");
-    println!("\t-h\tPrint this help");
-    println!("");
-    println!("\tThe {}m and a could be combined, for example: retouch -rc *.jpg",  if cfg!(windows) {"c, "} else {""}  );
-    println!("");
-    println!("\t<include_files> - one or more file specification (name or wildcard) to change date/time. Defaults to '*'");
-    println!("\t<exclude_files> - One or more file specification (filename or wildcard) to skip from <include_files> list");
-}
+// pub fn print_usage() {
+//     println!("Usage: retouch [options] <include_files> [- <exclude_files>]");
+//     println!("\tOptions:");
+//     if cfg!(windows) { println!("\t-c\tSet creation date"); }
+//     println!("\t-m\tSet modification date");
+//     println!("\t-a\tSet last access date");
+//     println!("\t-l\tLists files, displaying EXIF embedded creation date. Other date flags are ignored, no changes are applied.");
+//     println!("\t-h\tPrint this help");
+//     println!("");
+//     println!("\tThe {}m and a could be combined, for example: retouch -rc *.jpg",  if cfg!(windows) {"c, "} else {""}  );
+//     println!("");
+//     println!("\t<include_files> - one or more file specification (name or wildcard) to change date/time. Defaults to '*'");
+//     println!("\t<exclude_files> - One or more file specification (filename or wildcard) to skip from <include_files> list");
+// }
 
 #[derive(EnumSetType, Debug)]
 #[cfg(windows)]
@@ -32,106 +33,109 @@ pub enum OptEnum {
 #[derive(EnumSetType, Debug)]
 #[cfg(not(windows))]
 pub enum OptEnum {
-    A, M, C
+    A, M
 }
 
-#[derive(Debug, PartialEq)]
-struct Arguments {
-    opts_ : EnumSet<OptEnum>,
-    globs_ : Vec<String>,
-    show_help_ : bool
+#[derive(Debug, PartialEq, Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Set creation date.
+    #[cfg(windows)]
+    #[arg(short)]
+    c : bool,
+
+    /// Set modification date.
+    #[arg(short)]
+    m : bool,
+
+    /// Set last access date.
+    #[arg(short)]
+    a : bool,
+
+    /// Lists files, displaying EXIF embedded creation date. Other date flags are ignored, no changes are applied.
+    #[arg(short, long)]
+    list : bool,
+
+    /// One or more file specification (name or wildcard) to change date/time. Defaults to '*'.
+    files : Vec<String>,
+
+    /// One or more file specification (filename or wildcard) to skip from <include_files> list.
+    #[arg(last = true)]
+    exclude_files: Vec<String>,
+
+    ///  Additional note
 }
 
-impl Default for Arguments {
-    fn default() -> Self {
-        Arguments { opts_ : EnumSet::new(),  globs_: vec![] , show_help_: false }
+impl Args {
+    #[cfg(windows)]
+    fn is_ok(&self) -> bool {
+        self.m || self.a || self.list ||  self.c 
     }
-}
 
-impl Arguments {
-    fn create_help() -> Self {
-        Arguments { opts_ : EnumSet::new(),  globs_: vec![] , show_help_: true }
+    #[cfg(not(windows))]
+    fn is_ok(&self) -> bool {
+        self.m || self.a || self.list 
     }
+
     fn set_flags_if_unset(&mut self) {
-        if self.opts_.is_empty() {
-            self.opts_ = OptEnum::A | OptEnum::C | OptEnum::M;
+        if self.flags().is_empty() {
+            self.m = true;
+            self.a = true;
+            if cfg!(windows) {
+                self.c = true;
+            }
         }
     }
     fn unset_flags(&mut self) {
-        self.opts_.clear();
-    }
-    fn flags(&self) -> EnumSet<OptEnum> {
-        return self.opts_;
-    }
-    fn glob(&self) -> String {
-        return self.globs_[..].join(",");
-    }
-
-    fn get_show_help(&self) -> bool {
-        return self.show_help_ == true;
-    }
-
-    fn parse(args: Vec<String>) -> Result<Arguments> {
-        let mut args = args;
-        let mut opts = getopt::Parser::new(&args[..], "cmahl");
-
-        let mut value : Arguments = Arguments { ..Default::default()};
-
-        let mut list_flag = false;
-
-        loop {
-            match opts.next().transpose()? {
-                None => break,
-                Some(opt) => match opt {
-                    Opt('a', None) => value.opts_ |= OptEnum::A,
-                    Opt('c', None) => value.opts_ |= OptEnum::C,
-                    Opt('m', None) => value.opts_ |= OptEnum::M,
-                    Opt('l', None) => list_flag = true,
-                    Opt('h', None) => value.show_help_ = true,
-                    _ => unreachable!(),
-                },
-            }
+        self.m = false;
+        self.a = false;
+        if cfg!(windows) {
+            self.c = false;
         }
+    }
 
-        if list_flag {
-            value.unset_flags();
+    fn parse_vec(v : Vec<String>) -> Self {
+        let mut args = Args::parse_from(v);
+        if args.files.is_empty() {
+            args.files.push("*".to_string());
+        }
+        if args.list {
+            args.unset_flags();
         }
         else {
-            value.set_flags_if_unset();
+            args.set_flags_if_unset();
         }
 
-        let mut args = args.split_off(opts.index());
-
-        if let Some(index) = args.iter().position(|x| x == "-") {
-            let mut excl_args = args.split_off(index);
-            value.globs_.append(&mut args);
-            let mut excl_args = excl_args.split_off(1);
-            let mut excl_args = excl_args.iter_mut().map(|s| "!".to_owned()+s).collect();
-            value.globs_.append(&mut excl_args);
-            
-        }
-       else {
-            value.globs_.append(&mut args);
-        }
-
-        if value.glob().is_empty() {
-            value.globs_.append(&mut vec!["*".to_string()]);
-        }
-        return Ok(value);
+        return args;
     }
+
+    fn flags(&self) -> EnumSet<OptEnum> {
+        let mut flags = EnumSet::new();
+        if self.m {
+            flags |= OptEnum::M;
+        }
+        if self.a {
+            flags |= OptEnum::A;
+        }
+        if cfg!(windows) && self.c {
+            flags |= OptEnum::C;
+        }
+
+        return flags;
+    }
+
 }
 
 #[derive(Debug)]
 pub struct App {
-
-    args: Arguments,
+    args: Args,
     files : Vec<PathBuf>
 }
 
 impl Default for App {
     fn default() -> Self {
         App {
-            args : Arguments { ..Default::default() },
+            args : Args { m: false, a: false, c: false, list: false, files: Vec::new(), exclude_files: Vec::new() },
             files : vec![]
         }
     }
@@ -143,27 +147,114 @@ impl App {
     }
     pub fn create(args: Vec<String>) -> Result<App> {
         let mut app = App{..Default::default()};
-        let args = Arguments::parse(args);
 
-        app.args = args.unwrap_or(Arguments::create_help());
+        app.args = Args::parse_vec(args);
 
-        if app.args.get_show_help() {
+        if !app.args.is_ok() {
             return Err(anyhow!("help"));
         }
 
-        for glob in &app.args.globs_[..] {
-            let walker = globwalk::glob(glob)?.into_iter().filter_map(Result::ok);
-            let mut files = walker.filter(|f| f.file_type().is_file()).map(|d| d.into_path()).collect();
-            app.files.append(&mut files);
+        let mut fileset = HashSet::new();
+
+        for glob in &app.args.files {
+
+            let path = Path::new(glob);
+            if path.try_exists().unwrap_or(false) { 
+                if path.is_file() {
+                    fileset.insert(path.to_path_buf());
+                }
+                else if path.is_dir() {
+                    match fs::read_dir(path) {
+                        Ok(entries) => {
+                            for entry in entries {
+                                if entry.is_ok() {
+                                    fileset.insert(entry.unwrap().path());
+                                }
+                            }
+                        },
+                        Err(_) => { },
+                    }
+                }
+            }
+            else {
+                let base = path.parent().and_then(|p| p.canonicalize().ok()).unwrap_or(PathBuf::from(".")); // Should not return default as root folder is_dir and exists
+                let this_base = Path::new(".").canonicalize().unwrap();
+                let base = match base.as_path().strip_prefix(this_base.as_path()) {
+                    Ok(b) => b.to_path_buf(),
+                    Err(_) => base
+                };
+                let name = path.file_name().map_or("*", |f| f.to_str().unwrap() );
+                let walker = globwalk::GlobWalkerBuilder::from_patterns(
+                        base,
+                        &[name]
+                    )
+                    .follow_links(true)
+                    .case_insensitive(if cfg!(windows) { true } else { false } )
+                    .build()?
+                    .into_iter()
+                    .filter_map(Result::ok);
+
+                let files : Vec<PathBuf> = walker.filter(|f| f.file_type().is_file()).map(|d| d.into_path()).collect();
+                for p in &files {
+                    fileset.insert(p.to_path_buf());
+                }
+            }
+        }
+        for glob in &app.args.exclude_files {
+
+            let path = Path::new(glob);
+            if path.try_exists().unwrap_or(false) {
+                if path.is_file() {
+                    fileset.remove(&path.to_path_buf());
+                }
+                else if path.is_dir() {
+                    match fs::read_dir(path) {
+                        Ok(entries) => {
+                            for entry in entries {
+                                if entry.is_ok() {
+                                    if let Ok(p) = entry {
+                                        fileset.remove(&p.path());
+                                    }
+                                }
+                            }
+                        },
+                        Err(_) => {},
+                    }
+                }
+            }
+            else {
+                let base = path.parent().and_then(|p| p.canonicalize().ok()).unwrap_or(PathBuf::from(".")); // Should not return default as root folder is_dir and exists
+                let this_base = Path::new(".").canonicalize().unwrap();
+                let base = match base.as_path().strip_prefix(this_base.as_path()) {
+                    Ok(b) => b.to_path_buf(),
+                    Err(_) => base
+                };
+                let name = path.file_name().map_or("*", |f| f.to_str().unwrap() );
+                let walker = globwalk::GlobWalkerBuilder::from_patterns(
+                        base,
+                        &[name]
+                    )
+                    .follow_links(true)
+                    .case_insensitive(if cfg!(windows) { true } else { false } )
+                    .build()?
+                    .into_iter()
+                    .filter_map(Result::ok);
+
+                let files : Vec<PathBuf>  = walker.filter(|f| f.file_type().is_file()).map(|d| d.into_path()).collect();
+                for p in &files {
+                    fileset.remove(p);
+                }
+            }
         }
 
+
+        app.files = fileset.into_iter().collect();
         Ok(app)
     }
 
     fn get_file_date(file : &PathBuf) -> Result<DateTime<Local>> {
         let file = fs::read(file.as_path())?;
 
-            // the JPEG header will automatically be removed
         let rule = quickexif::describe_rule!(tiff {
                 0x8769 {
                     0x9004 { str + 0 / create_date }
