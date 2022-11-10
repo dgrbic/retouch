@@ -13,11 +13,11 @@ repository = "https://github.com/dgrbic/retouch"
 [dependencies]
 anyhow = "1.0.65"
 chrono = "0.4.22"
+clap = { version = "4.0.18", features = ["derive"] }
 colored = "2.0.0"
 dateparser = "0.1.7"
 enumset = "1.0.12"
 filetime_creation = "0.1.1"
-getopt = "1.1.3"
 globwalk = "0.8.1"
 quickexif = "0.1.5"
 walkdir = "2.3.2"
