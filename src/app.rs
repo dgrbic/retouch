@@ -5,25 +5,12 @@ use quickexif;
 use chrono::{DateTime, TimeZone, Local};
 use std::fs;
 use anyhow::{Result, anyhow};
-use filetime_creation::{FileTime, set_file_atime, set_file_mtime, set_file_ctime};
+use filetime_creation::{FileTime, set_file_atime, set_file_mtime};
+#[cfg(windows)]
+use filetime_creation::set_file_ctime;
 use colored::{Colorize, Color};
 use std::collections::HashSet;
 use clap::Parser;
-
-// pub fn print_usage() {
-//     println!("Usage: retouch [options] <include_files> [- <exclude_files>]");
-//     println!("\tOptions:");
-//     if cfg!(windows) { println!("\t-c\tSet creation date"); }
-//     println!("\t-m\tSet modification date");
-//     println!("\t-a\tSet last access date");
-//     println!("\t-l\tLists files, displaying EXIF embedded creation date. Other date flags are ignored, no changes are applied.");
-//     println!("\t-h\tPrint this help");
-//     println!("");
-//     println!("\tThe {}m and a could be combined, for example: retouch -rc *.jpg",  if cfg!(windows) {"c, "} else {""}  );
-//     println!("");
-//     println!("\t<include_files> - one or more file specification (name or wildcard) to change date/time. Defaults to '*'");
-//     println!("\t<exclude_files> - One or more file specification (filename or wildcard) to skip from <include_files> list");
-// }
 
 #[derive(EnumSetType, Debug)]
 #[cfg(windows)]
@@ -61,9 +48,7 @@ struct Args {
 
     /// One or more file specification (filename or wildcard) to skip from <include_files> list.
     #[arg(last = true)]
-    exclude_files: Vec<String>,
-
-    ///  Additional note
+    exclude_files: Vec<String>
 }
 
 impl Args {
@@ -81,7 +66,8 @@ impl Args {
         if self.flags().is_empty() {
             self.m = true;
             self.a = true;
-            if cfg!(windows) {
+            #[cfg(windows)]
+            {
                 self.c = true;
             }
         }
@@ -89,7 +75,8 @@ impl Args {
     fn unset_flags(&mut self) {
         self.m = false;
         self.a = false;
-        if cfg!(windows) {
+        #[cfg(windows)]
+        {
             self.c = false;
         }
     }
@@ -117,8 +104,11 @@ impl Args {
         if self.a {
             flags |= OptEnum::A;
         }
-        if cfg!(windows) && self.c {
-            flags |= OptEnum::C;
+        #[cfg(windows)]
+        {
+            if self.c {
+                flags |= OptEnum::C;
+            }
         }
 
         return flags;
@@ -135,7 +125,10 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         App {
+            #[cfg(windows)]
             args : Args { m: false, a: false, c: false, list: false, files: Vec::new(), exclude_files: Vec::new() },
+            #[cfg(not(windows))]
+            args : Args { m: false, a: false, list: false, files: Vec::new(), exclude_files: Vec::new() },
             files : vec![]
         }
     }
@@ -293,6 +286,7 @@ impl App {
                     let tmp = match arg {
                         OptEnum::A => ('A' , set_file_atime(file, touch_date) ),
                         OptEnum::M => ('M' , set_file_mtime(file, touch_date) ),
+                        #[cfg(windows)]
                         OptEnum::C => ('C' , set_file_ctime(file, touch_date) ),
                     };
 
@@ -300,7 +294,8 @@ impl App {
                 }
 
                 for r in results {
-                    if !cfg!(windows) && r.0 == 'C' {
+                    #[cfg(not(windows))]
+                    if r.0 == 'C' {
                         continue;
                     }
                     print!("{}", format!("{}", r.0).color(if r.1.is_ok() { Color::Green } else { Color::Red }));
