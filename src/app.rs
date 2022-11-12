@@ -10,21 +10,6 @@ use colored::{Colorize, Color};
 use std::collections::HashSet;
 use clap::Parser;
 
-// pub fn print_usage() {
-//     println!("Usage: retouch [options] <include_files> [- <exclude_files>]");
-//     println!("\tOptions:");
-//     if cfg!(windows) { println!("\t-c\tSet creation date"); }
-//     println!("\t-m\tSet modification date");
-//     println!("\t-a\tSet last access date");
-//     println!("\t-l\tLists files, displaying EXIF embedded creation date. Other date flags are ignored, no changes are applied.");
-//     println!("\t-h\tPrint this help");
-//     println!("");
-//     println!("\tThe {}m and a could be combined, for example: retouch -rc *.jpg",  if cfg!(windows) {"c, "} else {""}  );
-//     println!("");
-//     println!("\t<include_files> - one or more file specification (name or wildcard) to change date/time. Defaults to '*'");
-//     println!("\t<exclude_files> - One or more file specification (filename or wildcard) to skip from <include_files> list");
-// }
-
 #[derive(EnumSetType, Debug)]
 #[cfg(windows)]
 pub enum OptEnum {
@@ -61,9 +46,7 @@ struct Args {
 
     /// One or more file specification (filename or wildcard) to skip from <include_files> list.
     #[arg(last = true)]
-    exclude_files: Vec<String>,
-
-    ///  Additional note
+    exclude_files: Vec<String>
 }
 
 impl Args {
