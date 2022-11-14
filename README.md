@@ -25,6 +25,8 @@
 [![License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
+![CI][build-yml-badge]
+
 # reTouch
 
 Set image file (jpg, tiff) create/modification datetime to datetime from EXIF.
@@ -79,17 +81,21 @@ will change the file creation date/time (Windows only feature) of all ```jpg``` 
 ## Usage
 
 ```
-retouch [options] <include_files> [- <exclude_files>]
+Usage: retouch.exe [OPTIONS] [FILES]... [-- <EXCLUDE_FILES>...]
+
+Arguments:
+  [FILES]...          One or more file specification (name or wildcard) to change date/time. Defaults to '*'
+  [EXCLUDE_FILES]...  One or more file specification (filename or wildcard) to skip from <include_files> list
+
+Options:
+  -c             Set creation date
+  -m             Set modification date
+  -a             Set last access date
+  -l, --list     Lists files, displaying EXIF embedded creation date. Other date flags are ignored, no changes are applied
+  -h, --help     Print help information
+  -V, --version  Print version information
 ```
 
-### Options
-```
--c  Set creation date
--m  Set modification date
--a  Set last access date
--l  Lists files, displaying EXIF embedded creation date. Other date flags are ignored, no changes are applied.
--h  Prints the help
-```
 The c, m and a could be combined, for example: ```retouch -rc *.jpg```.
 
 
@@ -155,3 +161,4 @@ See the [open issues](https://github.com/dgrbic/retouch/issues) for a full list 
 [linkedin-url]: https://www.linkedin.com/in/dragan-grbic/
 [Rust-lang.org]: https://img.shields.io/badge/rust-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
 [Rust-url]: https://www.rust-lang.org/
+[build-yml-badge]: https://github.com/dgrbic/retouch/actions/workflows/build.yml/badge.svg
