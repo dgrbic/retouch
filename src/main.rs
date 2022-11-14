@@ -1,6 +1,5 @@
 mod app;
-use app::{App};
-
+use app::App;
 
 fn main() {
     use std::env;
@@ -15,8 +14,7 @@ fn main() {
 
     if app.get_options().is_empty() {
         app.list_files();
-    }
-    else {
+    } else {
         app.apply_touch();
     }
 }
