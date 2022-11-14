@@ -101,13 +101,6 @@ The c, m and a could be combined, for example: ```retouch -rc *.jpg```.
 
 Note that ```-c``` option works and is available only on Windows, as Linux does not record file creation date on every filesystem (e.g. ext2/ext3) and even where it is recorded there is no (documented, at least) way to modify information on mounted filesystem.
 
-### File selection
-
-To select the files for datetime modification or display, use glob wildcards.
-```
-<include_files> - one or more file specification (name or wildcard) to change date/time. Defaults to '*'");
-<exclude_files> - One or more file specification (filename or wildcard) to skip from <include_files> list");
-```
 
 ## Author
 
