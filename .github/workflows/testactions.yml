@@ -8,7 +8,9 @@ jobs:
     name: TestAction
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v1
+      - name: List1
+        run: ls -l
       - name: List
         uses: ./.gitbub/actions/install-rust-toolchain
       - name: Print
