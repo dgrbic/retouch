@@ -4,12 +4,10 @@ run-name: Test Action
 on: workflow_dispatch
 
 jobs:
-  test-action:
-    name: TestAction
+  cache-toolchain:
+    name: Cache Toolchain
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        toolchain-triplet: [x86_64-unknown-linux-gnu, x86_64-pc-windows-msvc]
+
     steps:
       - name: get-rust-toolchain
         id: get-rust-toolchain
@@ -27,15 +25,23 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
-            ${{ runner.os }}-
+            ${{ runner.os }}-    
 
+  install-toolset:
+    name: TestAction
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain-triplet: [x86_64-unknown-linux-gnu, x86_64-pc-windows-msvc]
+    steps:
       - name: List the state of rust toolchains
         continue-on-error: true
         run: rustup target list --installed
 
       - uses: actions/checkout@v1
 
-      - name: Install
+      - if: ${{ steps.cache-rust-toolset.outputs.cache-hit != 'true' }}
+        name: Install
         uses: ./.github/actions/install-rust-toolchain
         with:
           triplet: ${{ matrix.toolchain-triplet }}
