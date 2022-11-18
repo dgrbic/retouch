@@ -15,6 +15,11 @@ runs:
   using: "composite"
   steps:
     - id: list-toolchains
-      run: rustup toolchain list | sed -E 's/([[:graph:]]+)/\1=\1/' >> $GITHUB_OUTPUT
+      run: |
+        TEMP=$(rustup toolchain list | sed -E 's/([[:graph:]]+)/\1=\1/')
+        for i in $TEMP
+        do
+          echo $i >> $GITHUB_OUTPUT
+        done
       shell: bash
         
