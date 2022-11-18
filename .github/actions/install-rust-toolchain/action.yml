@@ -19,4 +19,5 @@ runs:
         echo "<<EOF" >> $GITHUB_OUTPUT
         rustup toolchain list | sed -E 's/([[:graph:]]+)/\1=\1/' >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
+      shell: bash
         
