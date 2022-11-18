@@ -59,6 +59,5 @@ jobs:
         continue-on-error: true
         run: rustup target list --installed
 
-
       - name: Print
         run: echo ${{ steps.Install.output }}
