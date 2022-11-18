@@ -20,6 +20,14 @@ jobs:
           echo "hash=$hash" >> $GITHUB_OUTPUT
         shell: bash
 
+      - name: calculate-hash
+        id: toolchain-hash
+        run: |
+          hash=$(cat ~/.rustup/toolchains/${{ steps.get-rust-toolchain.default}}/lib/rustlib/manifest-rust-std-* | sha1sum)
+          echo $hash
+          echo "hash=$hash" >> $GITHUB_OUTPUT
+        shell: bash
+
       - name: cache-toolset
         uses: actions/cache@v3
 
