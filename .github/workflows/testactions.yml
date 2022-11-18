@@ -7,6 +7,9 @@ jobs:
   test-action:
     name: TestAction
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain-triplet: [x86_64-unknown-linux-gnu, x86_64-pc-windows-msvc]
     steps:
       - name: cache-toolset
         uses: actions/cache@v3
@@ -16,20 +19,27 @@ jobs:
         with:
           # rust toolset is stored at ~/.rustup/toolchains
           path: ~/.rustup/toolchains
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/rustc*') }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/manifest-rust-std*') }}
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - if: ${{ steps.cache-toolset.outputs.cache-hit != 'true' }}
-        name: List the state of rust toolchains
+
+      - name: List the state of rust toolchains
         continue-on-error: true
-        run: rustup toolchain list -v
+        run: rustup target list --installed
 
       - uses: actions/checkout@v1
-      - name: List1
-        run: ls -1d $(find .github)
-      #- name: List
-      #  uses: ./.github/actions/install-rust-toolchain
-      #- name: Print
-      #  run: echo ${{ steps.List.output }}
+
+      - name: Install
+        uses: ./.github/actions/install-rust-toolchain
+        with:
+          channel: stable
+          triplet: ${{ matrix.toolchain-triplet }}
+
+      - name: List the state of rust toolchains
+        continue-on-error: true
+        run: rustup target list --installed
+
+      - name: Print
+        run: echo ${{ steps.Install.output }}
