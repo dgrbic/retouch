@@ -16,7 +16,7 @@ runs:
   steps:
     - id: list-toolchains
       run: |
-        TEMP=$(rustup toolchain list | sed -E 's/([[:graph:]]+)/\1=\1/')
+        TEMP=$(rustup toolchain list -v | sed 's/(default)//' | sed -E 's/([[:graph:]]+)[[:blank:]]*/\1=/')
         for i in $TEMP
         do
           echo $i >> $GITHUB_OUTPUT
