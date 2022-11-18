@@ -12,6 +12,6 @@ jobs:
       - name: List1
         run: ls -1d $(find .github)
       - name: List
-        uses: ./.gitbub/actions/install-rust-toolchain
+        uses: ./.github/actions/install-rust-toolchain
       - name: Print
         run: echo ${{ steps.List.output }}
