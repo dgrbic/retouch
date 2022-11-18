@@ -8,10 +8,28 @@ jobs:
     name: TestAction
     runs-on: ubuntu-latest
     steps:
+      - name: cache-toolset
+        uses: actions/cache@v3
+
+        env: 
+          cache-name: cache-rust-toolset
+        with:
+          # rust toolset is stored at ~/.rustup/toolchains
+          path: ~/.rustup/toolchains
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/rustc*') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - if: ${{ steps.cache-toolset.outputs.cache-hit != 'true' }}
+        name: List the state of rust toolchains
+        continue-on-error: true
+        run: rustup toolchain list -v
+
       - uses: actions/checkout@v1
       - name: List1
         run: ls -1d $(find .github)
-      - name: List
-        uses: ./.github/actions/install-rust-toolchain
-      - name: Print
-        run: echo ${{ steps.List.output }}
+      #- name: List
+      #  uses: ./.github/actions/install-rust-toolchain
+      #- name: Print
+      #  run: echo ${{ steps.List.output }}
