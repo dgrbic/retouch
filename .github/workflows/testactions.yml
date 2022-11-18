@@ -7,7 +7,6 @@ jobs:
   cache-toolchain:
     name: Cache Toolchain
     runs-on: ubuntu-latest
-
     steps:
       - name: get-rust-toolchain
         id: get-rust-toolchain
