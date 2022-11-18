@@ -17,5 +17,3 @@ runs:
     - id: list-default-toolset
       run: echo "default-toolset=$(rustup default | sed 's/(default)//')" >> $GITHUB_OUTPUT
       shell: bash
-
-        
