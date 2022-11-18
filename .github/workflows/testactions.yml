@@ -1,10 +1,12 @@
 name: TestAction
 run-name: Test Action
 
-on: workflow-dispatch
+on: workflow_dispatch
 
 jobs:
-  runs-on: ubuntu-latest
+  test-action:
+    name: TestAction
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
       - name: List
