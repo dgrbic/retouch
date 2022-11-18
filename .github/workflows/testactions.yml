@@ -1,0 +1,15 @@
+name: TestAction
+run-name: Test Action
+
+on: workflow_dispatch
+
+jobs:
+  test-action:
+    name: TestAction
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: List
+        uses: ./.gitbub/actions/install-rust-toolchain
+      - name: Print
+        run: echo ${{ steps.List.output }}
