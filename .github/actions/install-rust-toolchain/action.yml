@@ -13,7 +13,8 @@ runs:
   steps:
     - id: add-target
       run: rustup target add ${{ inputs.triplet }}
+      shell: bash
     - id: list-default-toolset
       run: echo "default-toolset=$(rustup default | sed 's/(default)//')" >> $GITHUB_OUTPUT
-#      shell: bash
+      shell: bash
         
