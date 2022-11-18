@@ -13,6 +13,14 @@ jobs:
         id: get-rust-toolchain
         run: echo "default=$(rustup default | sed 's/(default)//')" >> $GITHUB_OUTPUT
 
+      - name: calculate-hash
+        id: toolchain-hash
+        run: |
+          hash=$(cat ~/.rustup/toolchains/${{ steps.get-rust-toolchain.default}}/lib/rustlib/manifest-rust-std-* | sha1sum)
+          echo $hash
+          echo "hash=$hash" >> $GITHUB_OUTPUT
+        shell: bash
+
       - name: cache-toolset
         uses: actions/cache@v3
 
@@ -21,7 +29,7 @@ jobs:
         with:
           # rust toolset is stored at ~/.rustup/toolchains
           path: ~/.rustup/toolchains
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('~/.rustup/toolchains/${{ steps.get-rust-toolchain.default}}/lib/rustlib/manifest-rust-std-*') }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ steps.toolchain-hash.hash }}
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
