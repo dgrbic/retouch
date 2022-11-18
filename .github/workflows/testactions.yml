@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: List1
-        run: ls -l
+        run: ls -a -l
       - name: List
         uses: ./.gitbub/actions/install-rust-toolchain
       - name: Print
