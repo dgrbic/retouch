@@ -42,7 +42,6 @@ jobs:
       matrix:
         toolchain-triplet: [x86_64-unknown-linux-gnu, x86_64-pc-windows-msvc]
     steps:
-
       - name: List the state of rust toolchains
         continue-on-error: true
         run: rustup target list --installed
