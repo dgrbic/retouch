@@ -1,0 +1,38 @@
+name: CIBuild
+run-name: CI Build
+
+on: workflow_dispatch
+
+jobs:
+  sanity:
+    name: Check, build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch the code
+        uses: actions/checkout@v1
+
+      - uses: actions/cache@v3
+        id: cache-crates
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}        
+
+      - if: ${{ steps.cache-crates.outputs.cache-hit != 'true' }}
+        name: Fetch the crates
+        continue-on-error: true
+        run: cargo fetch --locked         
+
+      - name: Check the formating
+        run: cargo fmt -- --check
+
+      - name: Lint
+        run: cargo clippy -- -Dwarnings
+
+      - name: Unit test
+        run: cargo test
+        

@@ -2,9 +2,6 @@ name: install-rust-toolchain
 description: Install the Rust toolchan (and cache it)
 
 inputs:
-  channel:
-    description: 'Toolchain channel to use'
-    default: stable
   triplet:
     description: 'Toolchain triplet'
 outputs:
@@ -14,9 +11,10 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - id: list-toolchains
-      run: |
-        echo "<<EOF" >> $GITHUB_OUTPUT
-        rustup toolchain list | sed -E 's/([[:graph:]]+)/\1=\1/' >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+    - id: add-target
+      run: rustup target add ${{ inputs.triplet }}
+      shell: bash
+    - id: list-default-toolset
+      run: echo "default-toolset=$(rustup default | sed 's/(default)//')" >> $GITHUB_OUTPUT
+      shell: bash
         

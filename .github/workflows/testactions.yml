@@ -4,12 +4,59 @@ run-name: Test Action
 on: workflow_dispatch
 
 jobs:
-  test-action:
+  cache-toolchain:
+    name: Cache Toolchain
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: get-rust-toolchain
+        id: get-rust-toolchain
+        run: echo "default=$(rustup default | sed 's/\s(default)//')" >> $GITHUB_OUTPUT
+
+      - name: calculate-hash
+        id: toolchain-hash
+        run: |
+          hash=$(cat ~/.rustup/toolchains/$(rustup default | sed 's/\s(default)//')/lib/rustlib/manifest-rust-std-* | sha1sum)
+          echo $hash
+          echo "hash=$hash" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: cache-toolset
+        uses: actions/cache@v3
+
+        env: 
+          cache-name: cache-rust-toolset
+        with:
+          # rust toolset is stored at ~/.rustup/toolchains
+          path: ~/.rustup/toolchains
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ steps.toolchain-hash.hash }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-    
+
+  install-toolset:
     name: TestAction
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain-triplet: [x86_64-unknown-linux-gnu, x86_64-pc-windows-msvc]
     steps:
+      - name: List the state of rust toolchains
+        continue-on-error: true
+        run: rustup target list --installed
+
       - uses: actions/checkout@v1
-      - name: List
-        uses: ./.gitbub/actions/install-rust-toolchain
+
+      - if: ${{ steps.cache-rust-toolset.outputs.cache-hit != 'true' }}
+        name: Install
+        uses: ./.github/actions/install-rust-toolchain
+        with:
+          triplet: ${{ matrix.toolchain-triplet }}
+
+      - name: List the state of rust toolchains
+        continue-on-error: true
+        run: rustup target list --installed
+
       - name: Print
-        run: echo ${{ steps.List.output }}
+        run: echo ${{ steps.Install.output }}
