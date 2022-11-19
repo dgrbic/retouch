@@ -51,7 +51,7 @@ fn glob_test() {
     assert!(args.is_ok());
 
     assert_eq!(glob(&args), "*.jpg");
-    
+
     assert_eq!(args.flags(), EnumSet::all());
 }
 
