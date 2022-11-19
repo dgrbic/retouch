@@ -1,7 +1,7 @@
 name: CIBuild
 run-name: CI Build
 
-on: workflow_dispatch
+on: pull_request
 
 jobs:
   sanity:
@@ -35,4 +35,3 @@ jobs:
 
       - name: Unit test
         run: cargo test
-        
