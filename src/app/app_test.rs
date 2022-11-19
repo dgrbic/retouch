@@ -23,10 +23,11 @@ fn basic_arguments_test() {
     let args = Args::parse_vec(buld_args(&[]));
     assert!(args.is_ok());
     assert_eq!(glob(&args), "*");
-    assert_eq!(args.flags(), OptEnum::A | OptEnum::C | OptEnum::M);
+    assert_eq!(args.flags(), EnumSet::all());
 }
 
 #[test]
+#[cfg(windows)]
 fn flags_test() {
     let args = Args::parse_vec(buld_args(&["-c"]));
     assert!(args.is_ok());
@@ -50,7 +51,8 @@ fn glob_test() {
     assert!(args.is_ok());
 
     assert_eq!(glob(&args), "*.jpg");
-    assert_eq!(args.flags(), OptEnum::A | OptEnum::C | OptEnum::M);
+    
+    assert_eq!(args.flags(), EnumSet::all());
 }
 
 #[test]
@@ -58,7 +60,7 @@ fn glob_test_2() {
     let args = Args::parse_vec(buld_args(&["*.jpg", "--", "*.png", "*.gif"]));
     assert!(args.is_ok());
     assert_eq!(glob(&args), "*.jpg,!*.png,!*.gif");
-    assert_eq!(args.flags(), OptEnum::A | OptEnum::C | OptEnum::M);
+    assert_eq!(args.flags(), EnumSet::all());
 }
 
 #[test]
