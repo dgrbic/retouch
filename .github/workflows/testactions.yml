@@ -7,11 +7,21 @@ jobs:
   cache-toolchain:
     name: Cache Toolchain
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        toolchain-triplet: [x86_64-unknown-linux-gnu, x86_64-pc-windows-msvc]
     steps:
       - name: get-rust-toolchain
         id: get-rust-toolchain
         run: echo "default=$(rustup default | sed 's/\s(default)//')" >> $GITHUB_OUTPUT
+
+      - name: calculate-hash
+        id: toolchain-hash
+        run: |
+          hash=$(cat ~/.rustup/toolchains/$(rustup default | sed 's/\s(default)//')/lib/rustlib/manifest-rust-std-* | sha1sum)
+          echo $hash
+          echo "hash=$hash" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: calculate-hash
         id: toolchain-hash
